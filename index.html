@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CSSU T2 Cancelled Officer Checker - Google Sheet Live v11</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#f5f7fb;--card:#ffffff;--text:#162033;--muted:#667085;--line:#d9e2ef;
+    --blue:#2563eb;--blue2:#eff6ff;--red:#dc2626;--red2:#fef2f2;--green:#15803d;--green2:#f0fdf4;
+    --amber:#b45309;--amber2:#fffbeb;--gray:#f8fafc;--purple:#6d28d9;--purple2:#f5f3ff;
+  }
+  body{font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);padding:22px;line-height:1.45}
+  .wrap{max-width:1280px;margin:0 auto}
+  .hero{background:linear-gradient(135deg,#1d4ed8,#0f766e);color:#fff;border-radius:22px;padding:24px;margin-bottom:18px;box-shadow:0 12px 32px rgba(15,23,42,.14)}
+  .hero h1{font-size:26px;margin-bottom:8px}.hero p{opacity:.92;font-size:14px;max-width:980px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 8px 22px rgba(15,23,42,.06)}
+  .card h2{font-size:17px;margin-bottom:10px}.hint{font-size:13px;color:var(--muted);margin-top:8px}
+  label{display:block}.small{font-size:12px;color:var(--muted)}
+  input[type="file"],select,input[type="text"]{width:100%;padding:11px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:14px;margin-top:8px}
+  input[readonly]{background:#f8fafc;color:#475569}
+  .settings{display:grid;grid-template-columns:1.4fr .9fr 1.1fr;gap:12px;margin-top:12px}
+  .btns{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 0}
+  button{border:0;border-radius:12px;padding:11px 15px;font-weight:700;cursor:pointer;font-size:14px;transition:.15s ease}
+  button.primary{background:var(--blue);color:#fff}button.primary:hover{filter:brightness(.95)}
+  button.secondary{background:#e0f2fe;color:#075985}.neutral{background:#eef2f7;color:#334155}.danger{background:var(--red);color:#fff}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .summary{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;min-height:88px}.kpi .num{font-size:26px;font-weight:800;margin-top:6px}.kpi .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .kpi.red{background:var(--red2);border-color:#fecaca}.kpi.red .num{color:var(--red)}.kpi.green{background:var(--green2);border-color:#bbf7d0}.kpi.green .num{color:var(--green)}.kpi.amber{background:var(--amber2);border-color:#fde68a}.kpi.amber .num{color:var(--amber)}.kpi.purple{background:var(--purple2);border-color:#ddd6fe}.kpi.purple .num{color:var(--purple)}
+  .status{padding:12px 14px;border-radius:14px;margin-bottom:14px;border:1px solid var(--line);background:#fff;color:var(--muted);font-size:14px}.status.ok{background:var(--green2);border-color:#bbf7d0;color:#166534}.status.warn{background:var(--amber2);border-color:#fde68a;color:#92400e}.status.err{background:var(--red2);border-color:#fecaca;color:#991b1b}.status.info{background:var(--blue2);border-color:#bfdbfe;color:#1e40af}
+  .tableWrap{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-bottom:16px;box-shadow:0 8px 22px rgba(15,23,42,.05)}
+  .tableTitle{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#f8fafc;border-bottom:1px solid var(--line)}.tableTitle h3{font-size:16px}.tableTitle span{font-size:13px;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:13px}th,td{border-bottom:1px solid #eef2f7;padding:10px;vertical-align:top;text-align:left}th{background:#f8fafc;font-size:12px;color:#475569;position:sticky;top:0;z-index:1}tbody tr:hover{background:#f8fafc}
+  .pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}.pill.red{background:#fee2e2;color:#991b1b}.pill.green{background:#dcfce7;color:#166534}.pill.amber{background:#fef3c7;color:#92400e}.pill.blue{background:#dbeafe;color:#1e40af}.pill.gray{background:#e5e7eb;color:#374151}
+  .hide{display:none!important}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}.note{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:14px;padding:12px 14px;font-size:13px;margin-top:10px}
+  @media(max-width:900px){.grid,.settings,.summary{grid-template-columns:1fr}.hero h1{font-size:22px}body{padding:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>CSSU T2 Cancelled Officer Checker v12</h1>
+    <p>Upload only the finalized RMU Flexi roster. This page will auto-detect the date from the finalized filename, read the matching date tab from your Google Sheet, check column G cancellation status, then export every valid officer from the Google Sheet date tab. Officers found in finalized CSSU T2 use finalized roster details; officers not found in finalized are still included using Google Sheet ID/name/shift. Random/non-officer rows are ignored.</p>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>1) Upload Finalized RMU Flexi Roster</h2>
+      <input id="rmuFile" type="file" accept=".xlsx,.xls,.xlsm" />
+      <div class="hint">Example filename: <b>RMU FLEXI ROSTER 070526 (FINALISED).xlsx</b>. Website will convert <b>070526</b> to Google Sheet tab <b>07.05.2026</b>, and auto-try tabs with hidden/leading spaces such as <b>&nbsp;&nbsp;07.05.2026</b>.</div>
+    </div>
+    <div class="card">
+      <h2>2) Connected Google Sheet</h2>
+      <label class="small">Google Sheet link / ID</label>
+      <input id="sheetUrl" type="text" value="https://docs.google.com/spreadsheets/d/1i_OR3qFI6lFryycpmuwg1M5mwxxKNRXNZS77MbOp5qc/edit?usp=sharing" />
+      <div class="hint">The Google Sheet must be shared as <b>Anyone with the link can view</b>. Otherwise a standalone HTML page cannot read it.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Check settings</h2>
+    <div class="settings">
+      <div>
+        <label class="small">Date tab to read from Google Sheet</label>
+        <input id="dateTab" type="text" placeholder="Auto from finalized filename, e.g. 07.05.2026" />
+      </div>
+      <div>
+        <label class="small">Cancellation column</label>
+        <input type="text" value="Column G only" readonly />
+      </div>
+      <div>
+        <label class="small">Keywords checked in column G</label>
+        <input id="keywords" type="text" value="cancelled booking,cancel,cancelled,absent,no show" />
+      </div>
+    </div>
+    <div class="note">If the date tab has hidden spaces, this version will auto-try the space version. If Google blocks the read, open the Google Sheet → Share → General access → Anyone with the link → Viewer. If your company does not allow public link sharing, use Google Apps Script Web App / Google Sheets API OAuth instead.</div>
+    <div class="btns">
+      <button class="primary" id="runBtn">🔎 Check Cancelled Officers</button>
+      <button class="secondary" id="exportBtn" disabled>⬇ Export All Officers Excel</button>
+      <button class="neutral" id="copyBtn" disabled>📋 Copy Result</button>
+      <button class="danger" id="clearBtn">Clear</button>
+    </div>
+  </div>
+
+  <div id="status" class="status">Upload finalized roster, then click check.</div>
+
+  <div id="summary" class="summary hide">
+    <div class="kpi"><div class="label">Finalized CSSU T2 Officers</div><div id="kpiT2" class="num">0</div></div>
+    <div class="kpi amber"><div class="label">Google Sheet Cancelled</div><div id="kpiCancel" class="num">0</div></div>
+    <div class="kpi red"><div class="label">Cancelled Still In Finalized</div><div id="kpiStill" class="num">0</div></div>
+    <div class="kpi green"><div class="label">Cancelled Not In Finalized</div><div id="kpiRemoved" class="num">0</div></div>
+    <div class="kpi purple"><div class="label">Google Sheet Date Tab</div><div id="kpiSheet" class="num" style="font-size:18px">-</div></div>
+  </div>
+
+
+  <div id="allWrap" class="tableWrap hide">
+    <div class="tableTitle"><h3>All cancellation records found in Google Sheet column G</h3><span id="allCount">0 rows</span></div>
+    <div style="max-height:520px;overflow:auto"><table id="allTable"></table></div>
+  </div>
+
+  <div id="t2Wrap" class="tableWrap hide">
+    <div class="tableTitle"><h3>Finalized CSSU T2 roster extracted</h3><span id="t2Count">0 rows</span></div>
+    <div style="max-height:420px;overflow:auto"><table id="t2Table"></table></div>
+  </div>
+</div>
+
+<script>
+let rmuWorkbook=null, finalizedFileName='', lastResult=null;
+const $ = id => document.getElementById(id);
+const norm = v => String(v ?? '').trim();
+const up = v => norm(v).toUpperCase();
+const cleanNum = v => {
+  if(v === null || v === undefined || v === '') return '';
+  let s = String(v).trim();
+  // Google Visualization sometimes returns formatted IDs with commas/spaces or .0
+  s = s.replace(/[,\s]/g,'');
+  if(/^\d+(\.0+)?$/.test(s)) return String(parseInt(Number(s),10));
+  return s.replace(/\.0$/,'');
+};
+const cleanName = v => norm(v).replace(/\s+/g,' ').replace(/\([^)]*\)/g,'').trim();
+const nameKey = (...parts) => parts.map(cleanName).filter(Boolean).join(' ').toUpperCase().replace(/[^A-Z0-9]/g,'');
+const excelDate = val => {
+  if(val instanceof Date) return val.toISOString().slice(0,10);
+  if(typeof val === 'number') {
+    const d = XLSX.SSF.parse_date_code(val);
+    if(d) return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+  }
+  return norm(val);
+};
+const timeText = val => {
+  if(val instanceof Date) return `${String(val.getHours()).padStart(2,'0')}:${String(val.getMinutes()).padStart(2,'0')}`;
+  if(typeof val === 'number') {
+    const totalMin = Math.round(val * 24 * 60);
+    return `${String(Math.floor(totalMin/60)%24).padStart(2,'0')}:${String(totalMin%60).padStart(2,'0')}`;
+  }
+  return norm(val);
+};
+function setStatus(msg,type='') { $('status').className = 'status ' + type; $('status').innerHTML = msg; }
+function escapeHtml(s){return norm(s).replace(/[&<>'"]/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[m]));}
+function readFile(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = e => {
+      try { resolve(XLSX.read(new Uint8Array(e.target.result), {type:'array', cellDates:true, cellStyles:true})); }
+      catch(err){ reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+function sheetToRows(wb, name){ return XLSX.utils.sheet_to_json(wb.Sheets[name], {header:1, defval:null, raw:true}); }
+function getCell(row, letter){ return row[XLSX.utils.decode_col(letter)] ?? null; }
+function extractSheetId(urlOrId){
+  const s = norm(urlOrId);
+  const m = s.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  return m ? m[1] : s;
+}
+function extractDateFromFilename(filename){
+  const s = filename || '';
+  let m = s.match(/(\d{2})(\d{2})(\d{2})/);
+  if(m) return `${m[1]}.${m[2]}.20${m[3]}`;
+  m = s.match(/(\d{2})[.\-/](\d{2})[.\-/](\d{4})/);
+  if(m) return `${m[1]}.${m[2]}.${m[3]}`;
+  return '';
+}
+function buildKeywordRegex(){
+  const kws = $('keywords').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const escaped = kws.map(k => k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s*'));
+  return new RegExp(`(${escaped.join('|')})`, 'i');
+}
+function extractFinalizedT2(){
+  const sheetName = rmuWorkbook.SheetNames.find(n => up(n) === 'MAIN') || rmuWorkbook.SheetNames[0];
+  const rows = sheetToRows(rmuWorkbook, sheetName);
+  if(rows.length < 2) throw new Error('Finalized roster has no data rows.');
+  const header = rows[0].map(up);
+  const idx = {
+    external: header.findIndex(h => h.includes('EXTERNAL DEMAND')),
+    loc: header.findIndex(h => h.includes('DEPLOYMENT LOCATION')),
+    date: header.findIndex(h => h.includes('DEPLOYMENT DATE')),
+    start: header.findIndex(h => h.includes('SHIFT START')),
+    end: header.findIndex(h => h.includes('SHIFT END')),
+    total: header.findIndex(h => h.includes('TOTAL SHIFT')),
+    id: header.findIndex(h => h.includes('PERSONNEL')),
+    first: header.findIndex(h => h.includes('FIRST')),
+    last: header.findIndex(h => h.includes('LAST'))
+  };
+  ['loc','id','first'].forEach(k => { if(idx[k] < 0) throw new Error(`Cannot find ${k} column in finalized roster.`); });
+  const out=[];
+  rows.slice(1).forEach((r,i)=>{
+    const loc = norm(r[idx.loc]);
+    if(up(loc).includes('CSSU T2')){
+      const id = cleanNum(r[idx.id]);
+      const first = cleanName(r[idx.first]);
+      const last = idx.last >= 0 ? cleanName(r[idx.last]) : '';
+      out.push({
+        sourceRow:i+2,
+        externalDemandId: idx.external >= 0 ? norm(r[idx.external]) : '',
+        id, first, last, fullName:cleanName(`${first} ${last}`), nameKey:nameKey(first,last),
+        deploymentLocation:loc,
+        deploymentDate: idx.date >= 0 ? excelDate(r[idx.date]) : '',
+        deploymentDateRaw: idx.date >= 0 ? r[idx.date] : '',
+        startTime: idx.start >= 0 ? timeText(r[idx.start]) : '',
+        startRaw: idx.start >= 0 ? r[idx.start] : '',
+        endTime: idx.end >= 0 ? timeText(r[idx.end]) : '',
+        endRaw: idx.end >= 0 ? r[idx.end] : '',
+        totalHours: idx.total >= 0 ? r[idx.total] : '',
+        totalHoursText: idx.total >= 0 ? timeText(r[idx.total]) : ''
+      });
+    }
+  });
+  return out;
+}
+function googleTableToRows(table){
+  const rows = [];
+  if(!table) return rows;
+
+  // Important: Google Visualization may use the first sheet row as column labels,
+  // so the normal rows may NOT contain the header row. Add labels back as row 1.
+  if(Array.isArray(table.cols) && table.cols.length){
+    const hdr = table.cols.map(c => norm(c.label || c.id || ''));
+    if(hdr.some(Boolean)) rows.push(hdr);
+  }
+
+  if(!Array.isArray(table.rows)) return rows;
+  table.rows.forEach(r=>{
+    const arr = [];
+    const cells = r.c || [];
+    const max = Math.max(cells.length, table.cols ? table.cols.length : 10);
+    for(let i=0;i<max;i++){
+      const c = cells[i];
+      arr.push(c ? (c.f ?? c.v ?? '') : '');
+    }
+    rows.push(arr);
+  });
+  return rows;
+}
+function parseCsvText(text){
+  const rows = [];
+  let row = [], cell = '', q = false;
+  for(let i=0;i<text.length;i++){
+    const ch = text[i], nx = text[i+1];
+    if(q){
+      if(ch === '"' && nx === '"'){ cell += '"'; i++; }
+      else if(ch === '"'){ q = false; }
+      else cell += ch;
+    }else{
+      if(ch === '"') q = true;
+      else if(ch === ','){ row.push(cell); cell = ''; }
+      else if(ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+      else if(ch === '\r') {}
+      else cell += ch;
+    }
+  }
+  row.push(cell); rows.push(row);
+  return rows.filter(r => r.some(v => norm(v)));
+}
+async function loadGoogleSheetCsvRows(sheetId, sheetName){
+  // CSV export preserves A:J columns better than gviz JSON and avoids header guessing issues.
+  const url = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(sheetId)}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&range=A:J&headers=1`;
+  const res = await fetch(url, {cache:'no-store'});
+  if(!res.ok) throw new Error(`CSV read failed HTTP ${res.status}`);
+  const text = await res.text();
+  if(/google\s+sign\s*in|<html|DOCTYPE/i.test(text)) throw new Error('CSV read returned Google sign-in/HTML page. Check sharing permission.');
+  return parseCsvText(text);
+}
+function loadGoogleSheetJsonRows(sheetId, sheetName){
+  return new Promise((resolve,reject)=>{
+    const callbackName = '__gs_cb_' + Date.now() + '_' + Math.floor(Math.random()*100000);
+    const script = document.createElement('script');
+    const timeout = setTimeout(()=>{
+      cleanup();
+      reject(new Error('Google Sheet loading timeout. Check sharing permission and sheet tab name.'));
+    }, 20000);
+    function cleanup(){ clearTimeout(timeout); delete window[callbackName]; if(script.parentNode) script.parentNode.removeChild(script); }
+    window[callbackName] = function(resp){
+      cleanup();
+      if(resp && resp.status === 'error') {
+        const msg = (resp.errors || []).map(e=>e.detailed_message || e.message).join('; ') || 'Google Sheet returned an error.';
+        reject(new Error(msg));
+        return;
+      }
+      try { resolve(googleTableToRows(resp.table)); }
+      catch(err){ reject(err); }
+    };
+    const url = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(sheetId)}/gviz/tq?tqx=out:json;responseHandler:${callbackName}&sheet=${encodeURIComponent(sheetName)}&range=A:J&headers=1`;
+    script.onerror = () => { cleanup(); reject(new Error('Cannot load Google Sheet. It may be private, blocked, or the tab name is wrong.')); };
+    script.src = url;
+    document.body.appendChild(script);
+  });
+}
+async function loadGoogleSheetRows(sheetId, sheetName){
+  // Try CSV first, then JSONP fallback. Both are browser-only and do not need API key.
+  try{
+    const csvRows = await loadGoogleSheetCsvRows(sheetId, sheetName);
+    if(csvRows && csvRows.length) return csvRows;
+  }catch(csvErr){
+    console.warn('CSV Google Sheet read failed, trying JSONP:', csvErr);
+  }
+  return await loadGoogleSheetJsonRows(sheetId, sheetName);
+}
+
+function makeSheetNameCandidates(sheetName){
+  const base = norm(sheetName);
+  const c = [];
+  const add = v => { if(v && !c.includes(v)) c.push(v); };
+  add(base);
+  add(' ' + base);
+  add('  ' + base);
+  add('   ' + base);
+  add(base + ' ');
+  add(base + '  ');
+
+  const m = base.match(/^(\d{2})[.\-/](\d{2})[.\-/](\d{4})$/);
+  if(m){
+    const forms = [`${m[1]}.${m[2]}.${m[3]}`, `${m[1]}/${m[2]}/${m[3]}`, `${m[1]}-${m[2]}-${m[3]}`];
+    forms.forEach(v=>{ add(v); add(' '+v); add('  '+v); add('   '+v); add(v+' '); });
+  }
+  return c;
+}
+function looksLikeFlexiData(rows){
+  if(!rows || !rows.length) return false;
+  const firstRows = rows.slice(0,8).map(r => r.map(up).join('|')).join('\n');
+  return firstRows.includes('DATE') && firstRows.includes('ID') && (firstRows.includes('NAME') || firstRows.includes('SHIFT'));
+}
+async function loadBestGoogleSheetRows(sheetId, sheetName){
+  const candidates = makeSheetNameCandidates(sheetName);
+  let best = null, errors=[];
+  for(const candidate of candidates){
+    try{
+      const rows = await loadGoogleSheetRows(sheetId, candidate);
+      const cancelled = extractCancelledFromRows(rows, candidate);
+      const officers = extractAllGoogleSheetOfficers(rows, candidate);
+      const score = (cancelled.length * 10000) + (officers.length * 1000) + (looksLikeFlexiData(rows) ? 500 : 0) + Math.min(rows ? rows.length : 0, 100);
+      const item = {sheetName:candidate, rows, cancelled, officers, score};
+      if(!best || item.score > best.score) best = item;
+      // 53 officers expected in your case; but keep generic: once we find officers and/or cancellation, no need to continue all variants.
+      if(cancelled.length || officers.length >= 20) return item;
+    }catch(err){
+      errors.push(`${candidate}: ${err.message}`);
+    }
+  }
+  if(best) return best;
+  throw new Error('Cannot read matching Google Sheet date tab. Tried: ' + candidates.map(x=>`"${x}"`).join(', ') + '. ' + errors.join(' | '));
+}
+
+function isPersonnelId(v){
+  const s = cleanNum(v);
+  return /^\d{4,8}$/.test(s);
+}
+function detectFlexiColumns(rows){
+  // Google Sheet date tab normally has:
+  // A No. | B Date | C ID | D First Name | E Last Name | F Shift | G Flight/Status | H Updated By | I Postal | J Remarks
+  let headerRow = -1;
+  for(let i=0;i<Math.min(rows.length,10);i++){
+    const txt = (rows[i] || []).map(up).join('|');
+    if(txt.includes('DATE') && txt.includes('ID') && (txt.includes('SHIFT') || txt.includes('FLIGHT'))) { headerRow = i; break; }
+  }
+  const h = headerRow >= 0 ? (rows[headerRow] || []).map(up) : [];
+  const find = (...terms) => h.findIndex(x => terms.every(t => x.includes(t)));
+  const dateIdx = find('DATE');
+  const idIdx = find('ID');
+  let firstIdx = h.findIndex(x => x === 'NAME' || x.includes('FIRST NAME') || x.includes('PERSON FIRST'));
+  const shiftIdx = find('SHIFT');
+  return {
+    headerRow,
+    noIdx: 0,
+    dateIdx: dateIdx >= 0 ? dateIdx : 1,
+    idIdx: idIdx >= 0 ? idIdx : 2,
+    firstIdx: firstIdx >= 0 ? firstIdx : 3,
+    lastIdx: (firstIdx >= 0 ? firstIdx + 1 : 4),
+    shiftIdx: shiftIdx >= 0 ? shiftIdx : 5,
+    statusIdx: 6, // Column G only, fixed physical column
+    updatedByIdx: 7,
+    remarksIdx: 9
+  };
+}
+function findShiftCellInRow(r){
+  for(let i=0;i<r.length;i++){
+    const v = norm(r[i]);
+    if(/CSSU\s*T2|RMU\s*FLEXI|FLEXI\s*CSSU|Shift\s+[A-Z0-9]/i.test(v)) return {idx:i, value:v};
+  }
+  return {idx:-1, value:''};
+}
+function findIdCellInRow(r, preferredIdx){
+  const tryIdx = [];
+  if(preferredIdx !== undefined && preferredIdx >= 0) tryIdx.push(preferredIdx);
+  for(let i=0;i<r.length;i++) if(!tryIdx.includes(i)) tryIdx.push(i);
+  for(const i of tryIdx){
+    const id = cleanNum(r[i]);
+    if(isPersonnelId(id)) return {idx:i, value:id};
+  }
+  return {idx:-1, value:''};
+}
+function looksLikeRandomCodeRow(r){
+  // Ignore helper/random rows such as w4xf24 / 2ggeyf that only appear in one text cell.
+  const nonEmpty = (r || []).map(norm).filter(Boolean);
+  if(nonEmpty.length <= 2 && nonEmpty.some(v => /^[a-z0-9]{5,8}$/i.test(v)) && !nonEmpty.some(v=>isPersonnelId(v))) return true;
+  return false;
+}
+function makeGoogleOfficerFromRow(r, rowNum, sheetName, cols){
+  if(!r || looksLikeRandomCodeRow(r)) return null;
+  const idCell = findIdCellInRow(r, cols.idIdx);
+  const id = idCell.value;
+  if(!isPersonnelId(id)) return null;
+
+  const shiftCell = findShiftCellInRow(r);
+  const shift = shiftCell.value || norm(r[cols.shiftIdx]);
+
+  let first = cleanName(r[cols.firstIdx]);
+  let last = cleanName(r[cols.lastIdx]);
+
+  // If column-based first/last fails, use cells immediately after the ID.
+  if((!first || up(first).includes('DATE') || up(first).includes('NAME')) && idCell.idx >= 0) first = cleanName(r[idCell.idx + 1]);
+  if((!last || up(last).includes('SHIFT') || up(last).includes('NAME')) && idCell.idx >= 0) last = cleanName(r[idCell.idx + 2]);
+
+  const headerish = [id, first, last, shift].map(up).join('|');
+  if(headerish.includes('DATE') || headerish.includes('SHIFT|FLIGHT') || headerish.includes('NAME|')) return null;
+  if(!first && !last) return null;
+
+  // Column G only = physical index 6. Fallback scan is only for badly shifted Google responses.
+  const physicalG = norm(r[6]);
+  let statusG = physicalG;
+  if(!buildKeywordRegex().test(statusG)){
+    const possible = (r || []).map(norm).find(v => buildKeywordRegex().test(v));
+    if(possible) statusG = possible;
+  }
+
+  const st = parseShiftTimes(shift);
+  const isCancelled = buildKeywordRegex().test(statusG);
+  return {
+    gsSheet:sheetName,
+    gsRow:rowNum,
+    date:excelDate(r[cols.dateIdx]) || sheetNameToDisplayDate(sheetName),
+    id, first, last,
+    fullName:cleanName(`${first} ${last}`),
+    nameKey:nameKey(first,last),
+    shift,
+    columnG:statusG,
+    physicalColumnG:physicalG,
+    updatedBy:norm(r[cols.updatedByIdx]),
+    sourceRemarks:norm(r[cols.remarksIdx]),
+    exportRemark:isCancelled ? 'Cancelled' : 'ON DUTY',
+    isCancelled,
+    startTime:st.start,
+    endTime:st.end,
+    totalHours:st.hours
+  };
+}
+
+function extractCancelledFromRows(rows, sheetName){
+  const rx = buildKeywordRegex();
+  const cols = detectFlexiColumns(rows);
+  const out=[];
+  rows.forEach((r,zeroIdx)=>{
+    if(cols.headerRow >= 0 && zeroIdx <= cols.headerRow) return;
+    const gText = norm(r[cols.statusIdx]);
+    if(!rx.test(gText)) return;
+    const officer = makeGoogleOfficerFromRow(r, zeroIdx + 1, sheetName, cols);
+    if(officer){
+      out.push({
+        ...officer,
+        cancelColumn:'G',
+        cancelText:gText,
+        no:norm(r[cols.noIdx]),
+        remarks:officer.sourceRemarks
+      });
+    }
+  });
+  return out;
+}
+
+function sheetNameToDisplayDate(sheetName){
+  const s = norm(sheetName);
+  const m = s.match(/(\d{2})[.\-/](\d{2})[.\-/](\d{4})/);
+  return m ? `${m[1]}/${m[2]}/${m[3]}` : s;
+}
+function hhmmToMinutes(t){
+  const m = norm(t).match(/^(\d{1,2}):(\d{2})$/);
+  if(!m) return null;
+  return parseInt(m[1],10) * 60 + parseInt(m[2],10);
+}
+function formatShiftTime(raw){
+  const s = norm(raw).replace(/[^0-9]/g,'');
+  if(!s) return '';
+  const padded = s.length <= 3 ? s.padStart(4,'0') : s.slice(0,4);
+  return `${padded.slice(0,2)}:${padded.slice(2,4)}`;
+}
+function parseShiftTimes(shiftText){
+  const s = norm(shiftText);
+  const m = s.match(/(\d{3,4})\s*[-–—]\s*(\d{3,4})/);
+  if(!m) return {start:'', end:'', hours:''};
+  const start = formatShiftTime(m[1]);
+  const end = formatShiftTime(m[2]);
+  const sm = hhmmToMinutes(start), em0 = hhmmToMinutes(end);
+  let hours = '';
+  if(sm !== null && em0 !== null){
+    let em = em0;
+    if(em <= sm) em += 24 * 60;
+    hours = Math.round(((em - sm) / 60) * 100) / 100;
+  }
+  return {start, end, hours};
+}
+function extractAllGoogleSheetOfficers(rows, sheetName){
+  const cols = detectFlexiColumns(rows);
+  const out=[];
+  const seen = new Set();
+  rows.forEach((r,zeroIdx)=>{
+    if(cols.headerRow >= 0 && zeroIdx <= cols.headerRow) return;
+    const officer = makeGoogleOfficerFromRow(r, zeroIdx + 1, sheetName, cols);
+    if(!officer) return;
+    // keep duplicate IDs only if they are genuinely different rows/shifts; otherwise remove accidental duplicates
+    const key = `${officer.id}|${officer.shift}|${officer.first}|${officer.last}`.toUpperCase();
+    if(seen.has(key)) return;
+    seen.add(key);
+    out.push(officer);
+  });
+  return out;
+}
+
+function findFinalizedMatch(g, finalizedT2){
+  const byId = finalizedT2.find(o => o.id && g.id && o.id === g.id);
+  if(byId) return byId;
+  const gKey = nameKey(g.first, g.last);
+  if(gKey) return finalizedT2.find(o => o.nameKey && o.nameKey === gKey) || null;
+  return null;
+}
+function excelDurationFromHours(hours){
+  const n = Number(hours);
+  if(!isFinite(n) || n <= 0) return '';
+  return n / 24;
+}
+function makeExportRowsFromGoogleSheet(gsAll, finalizedT2){
+  // Export must include every officer found in the Google Sheet date tab.
+  // If the officer exists in finalized CSSU T2 roster, use finalized roster values for exact export format.
+  // If not found in finalized, still include the Google Sheet officer and derive shift details from the GS shift text.
+  return (gsAll || []).map(g => {
+    const m = findFinalizedMatch(g, finalizedT2 || []);
+    return {
+      externalDemandId: m ? (m.externalDemandId || '') : '',
+      deploymentLocation: m ? (m.deploymentLocation || '') : (g.shift || ''),
+      deploymentDate: m ? (m.deploymentDateRaw || m.deploymentDate || '') : (g.date || ''),
+      shiftStart: m ? (m.startRaw || m.startTime || '') : (g.startTime || ''),
+      shiftEnd: m ? (m.endRaw || m.endTime || '') : (g.endTime || ''),
+      totalHours: m ? (m.totalHours || '') : excelDurationFromHours(g.totalHours),
+      personnelNo: m ? (m.id || '') : (g.id || ''),
+      personFirstName: m ? (m.first || '') : (g.first || ''),
+      personLastName: m ? (m.last || g.last || '') : (g.last || ''),
+      remarks: g.isCancelled ? 'Cancelled' : 'ON DUTY',
+      isCancelled: !!g.isCancelled,
+      finalizedRow: m ? (m.sourceRow || '') : '',
+      fromGoogleOnly: !m
+    };
+  });
+}
+function styleCell(ws, addr, style){ if(ws[addr]) ws[addr].s = style; }
+function setDateTimeFormats(ws, rows){
+  // C = date, D/E/F = Excel time fractions if numeric. Keep real numeric values when available.
+  rows.forEach((r, idx) => {
+    const R = idx + 2;
+    const c = ws['C'+R], d = ws['D'+R], e = ws['E'+R], f = ws['F'+R];
+    if(c && typeof c.v === 'number') { c.t = 'n'; c.z = 'dd/mm/yyyy'; }
+    if(d && typeof d.v === 'number') { d.t = 'n'; d.z = 'hh:mm'; }
+    if(e && typeof e.v === 'number') { e.t = 'n'; e.z = 'hh:mm'; }
+    if(f && typeof f.v === 'number') { f.t = 'n'; f.z = '[h]:mm'; }
+  });
+}
+
+function makeStyledExportSheet(rows){
+  const headers = ['External Demand ID','Deployment Location','Deployment Date','Shift Start Time','Shift End Time','Total Shift Hours','Personnel no.','Person First Name','Person Last Name','Remarks'];
+  const aoa = [headers];
+  rows.forEach(r=>aoa.push([r.externalDemandId, r.deploymentLocation, r.deploymentDate, r.shiftStart, r.shiftEnd, r.totalHours, r.personnelNo, r.personFirstName, r.personLastName, r.remarks]));
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  setDateTimeFormats(ws, rows);
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  const headerStyle = {font:{bold:true,color:{rgb:'000000'}},fill:{patternType:'solid',fgColor:{rgb:'D9D9D9'}},alignment:{horizontal:'center',vertical:'center'},border:{top:{style:'thin',color:{rgb:'A6A6A6'}},bottom:{style:'thin',color:{rgb:'A6A6A6'}},left:{style:'thin',color:{rgb:'A6A6A6'}},right:{style:'thin',color:{rgb:'A6A6A6'}}}};
+  const bodyBorder = {top:{style:'thin',color:{rgb:'D9D9D9'}},bottom:{style:'thin',color:{rgb:'D9D9D9'}},left:{style:'thin',color:{rgb:'D9D9D9'}},right:{style:'thin',color:{rgb:'D9D9D9'}}};
+  const yellowStyle = {fill:{patternType:'solid',fgColor:{rgb:'FFFF00'}},border:bodyBorder};
+  const normalStyle = {border:bodyBorder};
+  for(let C=range.s.c; C<=range.e.c; C++){
+    const addr = XLSX.utils.encode_cell({r:0,c:C});
+    if(ws[addr]) ws[addr].s = headerStyle;
+  }
+  rows.forEach((r,idx)=>{
+    const R = idx + 1;
+    for(let C=range.s.c; C<=range.e.c; C++){
+      const addr = XLSX.utils.encode_cell({r:R,c:C});
+      if(!ws[addr]) ws[addr] = {t:'s',v:''};
+      ws[addr].s = r.isCancelled ? yellowStyle : normalStyle;
+    }
+  });
+  ws['!cols'] = [
+    {wch:24},{wch:42},{wch:16},{wch:16},{wch:16},{wch:16},{wch:14},{wch:24},{wch:24},{wch:14}
+  ];
+  ws['!freeze'] = {xSplit:0,ySplit:1};
+  return ws;
+}
+function crossCheck(cancelled, t2){
+  const byId = new Map(), byName = new Map();
+  t2.forEach(o=>{ if(o.id) byId.set(o.id, o); if(o.nameKey) byName.set(o.nameKey, o); });
+  return cancelled.map(c=>{
+    let m = c.id ? byId.get(c.id) : null;
+    let method = m ? 'ID' : '';
+    if(!m && c.nameKey){ m = byName.get(c.nameKey); method = m ? 'Name' : ''; }
+    return {...c,
+      matchStatus: m ? 'CANCELLED BUT STILL IN FINALISED' : 'Cancelled record found, not in finalized T2',
+      matched: !!m, matchMethod: method, finalizedRow: m?.sourceRow || '', finalizedShift: m?.deploymentLocation || '', finalizedStart: m?.startTime || '', finalizedEnd: m?.endTime || ''
+    };
+  });
+}
+function pill(text, cls){ return `<span class="pill ${cls}">${escapeHtml(text)}</span>`; }
+function renderTable(id, rows, columns){
+  const table=$(id);
+  if(!rows.length){ table.innerHTML='<tr><td class="small">No records found.</td></tr>'; return; }
+  const thead = '<thead><tr>' + columns.map(c=>`<th>${escapeHtml(c.label)}</th>`).join('') + '</tr></thead>';
+  const tbody = '<tbody>' + rows.map(row=>'<tr>' + columns.map(c=>{
+    let val = typeof c.value === 'function' ? c.value(row) : row[c.key];
+    if(c.pill){ val = c.pill(row); }
+    return `<td>${val}</td>`;
+  }).join('') + '</tr>').join('') + '</tbody>';
+  table.innerHTML = thead + tbody;
+}
+function renderResults(result){
+  ['summary','allWrap','t2Wrap'].forEach(id=>$(id).classList.remove('hide'));
+  $('kpiT2').textContent = result.t2.length; $('kpiCancel').textContent = result.all.length; $('kpiStill').textContent = result.critical.length; $('kpiRemoved').textContent = result.all.length - result.critical.length; $('kpiSheet').textContent = result.sheetName;
+  $('allCount').textContent = `${result.all.length} rows`; $('t2Count').textContent = `${result.t2.length} rows`;
+  const cancelCols = [
+    {label:'Status', pill:r=>pill(r.matchStatus, r.matched?'red':'green')}, {label:'ID', key:'id'}, {label:'Officer', key:'fullName'}, {label:'GS Row', key:'gsRow'},
+    {label:'Column G Status', key:'cancelText'}, {label:'GS Shift', key:'shift'}, {label:'Remarks / J', key:'remarks'},
+    {label:'Finalized Row', key:'finalizedRow'}, {label:'Finalized Shift', key:'finalizedShift'}, {label:'Start', key:'finalizedStart'}, {label:'End', key:'finalizedEnd'}, {label:'Match', value:r=>r.matchMethod || '-'}
+  ];
+  renderTable('allTable', result.all, cancelCols);
+  renderTable('t2Table', result.t2, [
+    {label:'Finalized Row', key:'sourceRow'}, {label:'ID', key:'id'}, {label:'Officer', key:'fullName'}, {label:'Shift', key:'deploymentLocation'}, {label:'Start', key:'startTime'}, {label:'End', key:'endTime'}
+  ]);
+}
+$('rmuFile').addEventListener('change', async e=>{
+  if(!e.target.files[0]) return;
+  try{
+    finalizedFileName = e.target.files[0].name;
+    rmuWorkbook = await readFile(e.target.files[0]);
+    const detected = extractDateFromFilename(finalizedFileName);
+    if(detected) $('dateTab').value = detected;
+    setStatus(`Finalized roster loaded. Date tab detected: <b>${escapeHtml(detected || 'not detected')}</b>. Click check to read Google Sheet.`, detected ? 'ok' : 'warn');
+  }catch(err){ setStatus('Cannot read finalized roster: '+escapeHtml(err.message),'err'); }
+});
+$('runBtn').addEventListener('click', async ()=>{
+  try{
+    if(!rmuWorkbook) throw new Error('Please upload finalized roster first.');
+    const sheetId = extractSheetId($('sheetUrl').value);
+    if(!sheetId) throw new Error('Google Sheet link / ID is empty.');
+    const sheetName = norm($('dateTab').value) || extractDateFromFilename(finalizedFileName);
+    if(!sheetName) throw new Error('Cannot detect date tab from finalized filename. Please type the date tab manually, e.g. 07.05.2026.');
+    setStatus(`Reading Google Sheet date tab <b>${escapeHtml(sheetName)}</b> and checking column G...<br><span class="small">This version also auto-tries tabs with leading spaces, e.g. "  ${escapeHtml(sheetName)}".</span>`, 'info');
+    const t2 = extractFinalizedT2();
+    const loaded = await loadBestGoogleSheetRows(sheetId, sheetName);
+    const gsRows = loaded.rows;
+    const actualSheetName = loaded.sheetName;
+    if(!gsRows.length) throw new Error('Google Sheet tab loaded but no rows were returned. Check the tab name or sharing setting.');
+    const cancelled = loaded.cancelled || extractCancelledFromRows(gsRows, actualSheetName);
+    const all = crossCheck(cancelled, t2);
+    const critical = all.filter(r=>r.matched);
+    const gsAll = loaded.officers || extractAllGoogleSheetOfficers(gsRows, actualSheetName);
+    lastResult = {sheetName:actualSheetName,t2,all,critical,gsAll,generatedAt:new Date().toLocaleString()};
+    renderResults(lastResult);
+    $('exportBtn').disabled = false; $('copyBtn').disabled = false;
+    if(critical.length) setStatus(`⚠ Found ${critical.length} cancelled officer(s) still in finalized CSSU T2 roster from loaded tab ${escapeHtml(lastResult.sheetName)}. Export will include all officer rows from the Google Sheet date tab. Officers found in finalized CSSU T2 use finalized roster details; Google-only officers are also included. Cancelled rows will be yellow.`, 'warn');
+    else if(all.length) setStatus(`✅ Found ${all.length} cancellation record(s) from loaded tab ${escapeHtml(lastResult.sheetName)}. Export will include all officer rows from the Google Sheet date tab. Officers found in finalized CSSU T2 use finalized roster details; Google-only officers are also included. Cancelled rows will be yellow.`, 'ok');
+    else setStatus(`✅ No cancellation keywords found in Google Sheet column G for loaded tab ${escapeHtml(lastResult.sheetName)}. Export will include all officer rows from the Google Sheet date tab, matched against finalized CSSU T2 roster.`, 'ok');
+  }catch(err){ setStatus('Error: '+escapeHtml(err.message),'err'); }
+});
+$('exportBtn').addEventListener('click', ()=>{
+  if(!lastResult) return;
+  const wb = XLSX.utils.book_new();
+
+  // Main export: include ALL officers from the Google Sheet date tab.
+  // Matched officers use finalized roster details; officers not found in finalized are still included using Google Sheet details.
+  const exportRows = makeExportRowsFromGoogleSheet(lastResult.gsAll || [], lastResult.t2 || []);
+  if(!exportRows.length){
+    alert('No Google Sheet officer rows were found. Please check that the correct date tab is loaded and the Google Sheet is shared. This version reads A:J and detects ID/name even when Google removes the header row.');
+    return;
+  }
+  const mainWs = makeStyledExportSheet(exportRows);
+  XLSX.utils.book_append_sheet(wb, mainWs, 'Sheet1');
+
+  XLSX.writeFile(wb, `T2 Daily Flexi Export - ${lastResult.sheetName.replace(/[^0-9.]/g,'') || 'result'}.xlsx`);
+});
+$('copyBtn').addEventListener('click', async ()=>{
+  if(!lastResult) return;
+  const lines = [['Status','ID','Officer','GS Row','Column G Status','GS Shift','Finalized Row','Finalized Shift'].join('\t')];
+  lastResult.all.forEach(r=>lines.push([r.matchStatus,r.id,r.fullName,r.gsRow,r.cancelText,r.shift,r.finalizedRow,r.finalizedShift].join('\t')));
+  await navigator.clipboard.writeText(lines.join('\n'));
+  setStatus('Result copied to clipboard.', 'ok');
+});
+$('clearBtn').addEventListener('click', ()=>{
+  rmuWorkbook=null; finalizedFileName=''; lastResult=null; $('rmuFile').value=''; $('dateTab').value='';
+  ['summary','allWrap','t2Wrap'].forEach(id=>$(id).classList.add('hide'));
+  $('exportBtn').disabled=true; $('copyBtn').disabled=true; setStatus('Upload finalized roster, then click check.');
+});
+</script>
+</body>
+</html>
