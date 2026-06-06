@@ -1,0 +1,10 @@
+{
+  "name": "efof-checker",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  }
+}
